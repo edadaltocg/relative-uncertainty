@@ -124,3 +124,16 @@ export ROOT_DIR=
 export CHECKPOINTS_DIR=${ROOT_DIR}/checkpoints
 export DATA_DIR=${ROOT_DIR}/data
 ```
+
+## Citing this work
+
+```
+@misc{dadalto2023datadriven,
+      title={A Data-Driven Measure of Relative Uncertainty for Misclassification Detection}, 
+      author={Eduardo Dadalto and Marco Romanelli and Georg Pichler and Pablo Piantanida},
+      year={2023},
+      eprint={2306.01710},
+      archivePrefix={arXiv},
+      primaryClass={stat.ML}
+}
+```

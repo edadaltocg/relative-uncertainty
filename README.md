@@ -2,6 +2,8 @@
 
 Checkpoints are online and available at: `https://github.com/edadaltocg/relative-uncertainty/releases/tag/checkpoints`.
 
+[Arxiv link](https://arxiv.org/abs/2306.01710).
+
 ## Main code
 
 ```python

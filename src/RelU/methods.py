@@ -1,7 +1,9 @@
 from functools import partial
+from typing import Any
 import torch
 import torch.utils.data
 from tqdm import tqdm
+import copy
 
 
 def g(logits, temperature=1.0):
@@ -73,6 +75,80 @@ class MetricLearningLagrange:
         return torch.diag(probs @ params @ probs.T)
 
 
+class MLP(torch.nn.Module):
+    def __init__(self, num_classes, hidden_size=128, num_hidden_layers=1, *args, **kwargs) -> None:
+        super().__init__()
+        self.layer0 = torch.nn.Linear(num_classes, hidden_size)
+        self.classifier = torch.nn.Linear(hidden_size, 1)
+        self.hidden_layers = None
+        if num_hidden_layers > 0:
+            self.hidden_layers = torch.nn.Sequential(
+                *([torch.nn.Linear(hidden_size, hidden_size), torch.nn.ReLU()] * num_hidden_layers)
+            )
+
+    def forward(self, x):
+        x = torch.relu(self.layer0(x))
+        if self.hidden_layers is not None:
+            x = self.hidden_layers(x)
+        return torch.sigmoid(self.classifier(x))
+
+
+class MLPTrainer:
+    def __init__(self, model, num_classes, epochs=100, hidden_size=128, num_hidden_layers=1, *args, **kwargs) -> None:
+        self.model = model
+        self.device = next(model.parameters()).device
+        self.net = MLP(num_classes, hidden_size, num_hidden_layers)
+        self.net = self.net.to(self.device)
+        self.criterion = torch.nn.BCELoss()
+        self.epochs = epochs
+
+    def fit(self, train_dataloader, val_dataloader, *args, **kwargs):
+        optimizer = torch.optim.Adam(self.net.parameters(), lr=1e-2)
+        best_acc = 0
+        best_weights = copy.deepcopy(self.net.to("cpu").state_dict())
+        self.net = self.net.to(self.device)
+        for e in tqdm(range(self.epochs), desc="Training"):
+            # train step
+            self.net.train()
+            for data, labels in train_dataloader:
+                data = data.to(self.device)
+                labels = labels.to(self.device, dtype=torch.float32)
+                with torch.no_grad():
+                    logits = self.model(data)
+                y_pred = self.net(logits)
+                loss = self.criterion(y_pred.view(-1), labels)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+            # eval
+            self.net.eval()
+            preds = 0
+            total = 0
+            for data, labels in val_dataloader:
+                data = data.to(self.device)
+                labels = labels.to(self.device)
+                with torch.no_grad():
+                    logits = self.model(data)
+                    y_pred = self.net(logits)
+                preds += (y_pred == labels).int().sum().item()
+                total += len(data)
+            acc = preds / total
+            if acc > best_acc:
+                best_acc = acc
+                best_weights = copy.deepcopy(self.net.to("cpu").state_dict())
+                self.net = self.net.to(self.device)
+
+        self.net.load_state_dict(best_weights)
+        self.net = self.net.to(self.device)
+
+    def __call__(self, logits, *args: Any, **kwds: Any) -> Any:
+        logits_device = logits.device
+        logits = logits.to(self.device)
+        self.net.eval()
+        return self.net(logits).to(logits_device)
+
+
 class Wrapper:
     def __init__(self, method, *args, **kwargs):
         self.method = method
@@ -95,4 +171,6 @@ def get_method(method_name, *args, **kwargs):
         return Wrapper(msp)
     if method_name == "metric_lagrange":
         return Wrapper(MetricLearningLagrange(*args, **kwargs))
+    if method_name == "mlp":
+        return Wrapper(MLPTrainer(*args, **kwargs))
     raise ValueError(f"Method {method_name} not supported")

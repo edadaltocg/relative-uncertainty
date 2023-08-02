@@ -108,6 +108,8 @@ def main(temperature, magnitude):
     dataset = torch.utils.data.Subset(dataset, indices)
 
     # split data
+    dataset_name = args.model_name.split("_")[-1]
+    num_classes = {"cifar10":10, "svhn":10, "cifar100":100, "imagenet":1000}[dataset_name]
     n = len(dataset)
     num_train_samples = n // args.r
     train_dataset = torch.utils.data.Subset(dataset, range(0, num_train_samples))
@@ -125,7 +127,7 @@ def main(temperature, magnitude):
     )
 
     # get train probs
-    method = get_method(args.method, temperature=temperature, model=model, lbd=args.lbd)
+    method = get_method(args.method, temperature=temperature, model=model, lbd=args.lbd, num_classes=num_classes)
     method.fit(train_dataloader, val_dataloader)
 
     test_preds, test_targets, test_scores = [], [], []
@@ -222,7 +224,7 @@ if __name__ == "__main__":
         0,
     ]
 
-    if args.method == "msp":
+    if args.method == "msp" or args.method == "mlp":
         main(temperature=1.0, magnitude=0.0)
     else:
         for temperature, magnitude in itertools.product(TEMPERATURES, MAGNITUDES):

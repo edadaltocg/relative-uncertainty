@@ -4,6 +4,7 @@ import torch
 import torch.utils.data
 from tqdm import tqdm
 import copy
+from src.utils.eval import evaluate
 
 
 def g(logits, temperature=1.0):
@@ -94,7 +95,7 @@ class MLP(torch.nn.Module):
 
 
 class MLPTrainer:
-    def __init__(self, model, num_classes, epochs=100, hidden_size=128, num_hidden_layers=1, *args, **kwargs) -> None:
+    def __init__(self, model, num_classes, epochs=100, hidden_size=256, num_hidden_layers=2, *args, **kwargs) -> None:
         self.model = model
         self.device = next(model.parameters()).device
         self.net = MLP(num_classes, hidden_size, num_hidden_layers)
@@ -103,41 +104,61 @@ class MLPTrainer:
         self.epochs = epochs
 
     def fit(self, train_dataloader, val_dataloader, *args, **kwargs):
-        optimizer = torch.optim.Adam(self.net.parameters(), lr=1e-2)
+        optimizer = torch.optim.Adam(self.net.parameters(), lr=1e-1)
         best_acc = 0
+        best_fpr = 1
+        best_auc = 0
+        loss = torch.inf
         best_weights = copy.deepcopy(self.net.to("cpu").state_dict())
         self.net = self.net.to(self.device)
-        for e in tqdm(range(self.epochs), desc="Training"):
+        progress_bar = tqdm(range(self.epochs), desc="Fit", unit="epoch")
+        for e in progress_bar:
             # train step
             self.net.train()
             for data, labels in train_dataloader:
                 data = data.to(self.device)
-                labels = labels.to(self.device, dtype=torch.float32)
+                labels = labels.to(self.device)
                 with torch.no_grad():
                     logits = self.model(data)
+                model_pred = logits.argmax(dim=1)
+                bin_labels = (model_pred != labels).float()
                 y_pred = self.net(logits)
-                loss = self.criterion(y_pred.view(-1), labels)
+                loss = self.criterion(y_pred.view(-1), bin_labels)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+                loss = loss.item()
 
             # eval
             self.net.eval()
-            preds = 0
-            total = 0
+            scores = []
+            targets = []
+            preds = []
             for data, labels in val_dataloader:
                 data = data.to(self.device)
                 labels = labels.to(self.device)
                 with torch.no_grad():
                     logits = self.model(data)
+                    model_pred = logits.argmax(dim=1)
+                    bin_labels = (model_pred != labels).int()
                     y_pred = self.net(logits)
-                preds += (y_pred == labels).int().sum().item()
-                total += len(data)
-            acc = preds / total
-            if acc > best_acc:
-                best_acc = acc
+                preds.append(y_pred.round())
+                targets.append(bin_labels.view(-1))
+                scores.append(y_pred.view(-1))
+            targets = torch.cat(targets)
+            scores = torch.cat(scores)
+            preds = torch.cat(preds)
+            acc, roc_auc, fpr = evaluate(preds, targets, scores)
+            # if acc > best_acc:
+            #     best_acc = acc
+            #     best_weights = copy.deepcopy(self.net.to("cpu").state_dict())
+            #     self.net = self.net.to(self.device)
+            if fpr < best_fpr:
+                best_fpr = fpr
                 best_weights = copy.deepcopy(self.net.to("cpu").state_dict())
                 self.net = self.net.to(self.device)
+
+            progress_bar.set_postfix(loss=loss, acc=acc, fpr=fpr, best_fpr=best_fpr, auc=roc_auc)
 
         self.net.load_state_dict(best_weights)
         self.net = self.net.to(self.device)

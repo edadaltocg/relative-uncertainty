@@ -165,3 +165,4 @@ checkpoints/
 .DS_Store
 cluster/
 .vscode/
+**slurm*

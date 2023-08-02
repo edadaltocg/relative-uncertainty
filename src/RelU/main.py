@@ -3,7 +3,6 @@ import argparse
 import itertools
 import json
 import random
-import pandas as pd
 import numpy as np
 from torch.autograd import Variable
 import torch
@@ -16,31 +15,9 @@ from src.utils.models import _get_openmix_cifar100_transforms, _get_openmix_cifa
 import torchvision
 import timm
 import timm.data
-from sklearn.metrics import auc, roc_curve
+from src.utils.eval import evaluate
 
 DATA_DIR = os.environ.get("DATA_DIR", "data/")
-
-
-def fpr_at_fixed_tpr(fprs, tprs, thresholds, tpr_level: float = 0.95):
-    if all(tprs < tpr_level):
-        raise ValueError(f"No threshold allows for TPR at least {tpr_level}.")
-    idxs = [i for i, x in enumerate(tprs) if x >= tpr_level]
-    idx = min(idxs)
-    return fprs[idx], tprs[idx], thresholds[idx]
-
-
-def evaluate(preds, targets, scores):
-    scores = scores.view(-1).detach().cpu().numpy()
-    targets = targets.view(-1).detach().cpu().numpy()
-    preds = preds.view(-1).detach().cpu().numpy()
-
-    acc = (preds == targets).mean()
-    train_labels = preds != targets
-    fprs, tprs, thrs = roc_curve(train_labels, scores)
-    roc_auc = auc(fprs, tprs)
-    fpr, _, _ = fpr_at_fixed_tpr(fprs, tprs, thrs, 0.95)
-
-    return acc, roc_auc, fpr
 
 
 def get_model_and_dataset(model_name):
@@ -109,7 +86,7 @@ def main(temperature, magnitude):
 
     # split data
     dataset_name = args.model_name.split("_")[-1]
-    num_classes = {"cifar10":10, "svhn":10, "cifar100":100, "imagenet":1000}[dataset_name]
+    num_classes = {"cifar10": 10, "svhn": 10, "cifar100": 100, "imagenet": 1000}[dataset_name]
     n = len(dataset)
     num_train_samples = n // args.r
     train_dataset = torch.utils.data.Subset(dataset, range(0, num_train_samples))

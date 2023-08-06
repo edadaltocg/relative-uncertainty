@@ -166,3 +166,7 @@ checkpoints/
 cluster/
 .vscode/
 **slurm*
+results/
+tensors/
+images/
+*.pt

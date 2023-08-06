@@ -6,6 +6,8 @@ Checkpoints are online and available at: `https://github.com/edadaltocg/relative
 
 ## Main code
 
+Relative-uncertainty can be implemented with the following code:
+
 ```python
 import torch
 
@@ -67,11 +69,13 @@ class MetricLearningLagrange:
 
 ### Misclassification
 
-Variables:
+Script example with supported arguments:
 
 ```bash
 model_names=("densenet121_cifar10" "resnet34_cifar10" "densenet121_cifar100" "resnet34_cifar100")
 styles=("ce" "openmix" "mixup" "regmixup" "lognorm")
+method=("msp" "doctor" "odin" "metric_lagrange")
+
 python -m src.RelU.main \
     --model_name resnet34_cifar10 \
     --r 2 \
@@ -116,15 +120,16 @@ python -m mismatch_analysis.d_matrix.d_matrix_eval_script --config_file_path ./m
 python -m mismatch_analysis.doctor.doctor_script --model_idx ${i}
 ```
 
-## Environment variables
+## Environment variables (Optional)
 
 Environment variables are set in `.env`. Run `source .env` to export them.
 
 ```
 # .env
-export ROOT_DIR=
+export ROOT_DIR="."
 export CHECKPOINTS_DIR=${ROOT_DIR}/checkpoints
 export DATA_DIR=${ROOT_DIR}/data
+export TENSORS_DIR=${ROOT_DIR}/tensors
 ```
 
 ## Citing this work

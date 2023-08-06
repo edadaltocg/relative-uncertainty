@@ -8,7 +8,7 @@ from torch.autograd import Variable
 import torch
 import torch.utils.data
 from tqdm import tqdm
-from src.RelU.methods import get_method
+from src.RelU.methods import add_dropout_layer, enable_dropout, get_method
 from src.utils.datasets import get_dataset
 from src.utils.helpers import append_results_to_file
 from src.utils.models import _get_openmix_cifar100_transforms, _get_openmix_cifar10_transforms, get_model_essentials
@@ -78,6 +78,9 @@ def main(temperature, magnitude):
     model, dataset = get_model_and_dataset(args.model_name)
     model = model.to(device)
     model.eval()
+    if args.method == "mc_dropout":
+        add_dropout_layer(model)
+        enable_dropout(model)
 
     # randomly permutate dataset
     indices = list(range(len(dataset)))
@@ -127,10 +130,18 @@ def main(temperature, magnitude):
             inputs = Variable(inputs, requires_grad=False)
 
         with torch.no_grad():
-            logits = model(inputs)
-            if args.style == "openmix":
-                logits = logits[:, :-1]
-            scores = method(logits)
+            if args.method == "mc_dropout":
+                k=10
+                logits = torch.zeros(k, inputs.shape[0], num_classes).to(device)
+                for i in range(k):
+                    logits[i] = model(inputs)
+                logits = logits.mean(dim=0)
+                scores = method(logits)
+            else:
+                logits = model(inputs)
+                if args.style == "openmix":
+                    logits = logits[:, :-1]
+                scores = method(logits)
 
         if pred is None:
             pred = torch.argmax(logits, dim=1)
@@ -143,16 +154,17 @@ def main(temperature, magnitude):
     test_targets = torch.concat(test_targets)
     test_scores = torch.concat(test_scores)
 
-    acc, roc_auc, fpr = evaluate(test_preds, test_targets, test_scores)
+    model_acc, roc_auc, fpr, aurc = evaluate(test_preds, test_targets, test_scores)
     results = {
         "model_name": args.model_name,
         "style": args.style,
         "temperature": temperature,
         "magnitude": magnitude,
         "method": args.method,
-        "accuracy": acc,
+        "accuracy": model_acc,
         "fpr": fpr,
         "auc": roc_auc,
+        "aurc": aurc,
         "r": args.r,
         "lbd": args.lbd,
         "seed": args.seed,
@@ -160,6 +172,31 @@ def main(temperature, magnitude):
 
     print(json.dumps(results, indent=2))
     append_results_to_file(results, "results/results.csv")
+
+    # save scores
+    root = os.environ.get("TENSORS_DIR", "tensors/")
+    os.makedirs(root, exist_ok=True)
+    save_path = os.path.join(
+        root,
+        f"{args.model_name}_{args.style}_{args.method}_{temperature:.1f}_{magnitude:.4f}_{args.r}_{args.lbd:.2f}_{args.seed}_",
+    )
+    save_obj = dict(
+        preds=test_preds.detach().cpu().numpy(),
+        targets=test_targets.detach().cpu().numpy(),
+        scores=test_scores.detach().cpu().numpy(),
+    )
+    np.savez(save_path + "main.npz", **save_obj)
+
+    # torch.save(test_preds, save_path + "preds.pt")
+    # torch.save(test_targets, save_path + "targets.pt")
+    # torch.save(test_scores, save_path + "scores.pt")
+
+    # save D matrix
+    if args.method == "metric_lagrange":
+        D = method.export_matrix()
+        torch.save(D, save_path + "D.pt")
+
+    print(f"Files saved to memory for config: {args}")
     return results
 
 
@@ -174,34 +211,29 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=1, help="random seed")
     args = parser.parse_args()
 
-    TEMPERATURES = [0.5, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 2]
+    TEMPERATURES = [0.2, 0.4, 0.6, 0.8, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 2]
     MAGNITUDES = [
         0,
+        0.0005,
         0.001,
-        0.0012,
-        0.0014,
-        0.0016,
-        0.0018,
+        0.0015,
         0.002,
-        0.0022,
-        0.0024,
-        0.0026,
-        0.0028,
+        0.0025,
         0.003,
-        0.0032,
-        0.0034,
-        0.0036,
-        0.0038,
-        0.004,
-        0.0042,
-        0.0044,
-        0.0046,
-        0.0048,
-        0.005,
-        0,
+        0.0035,
+        0.0040,
+        # 0.0036,
+        # 0.0038,
+        # 0.004,
+        # 0.0042,
+        # 0.0044,
+        # 0.0046,
+        # 0.0048,
+        # 0.005,
+        # 0,
     ]
 
-    if args.method == "msp" or args.method == "mlp":
+    if args.method == "msp" or args.method == "mlp" or args.method == "mc_dropout":
         main(temperature=1.0, magnitude=0.0)
     else:
         for temperature, magnitude in itertools.product(TEMPERATURES, MAGNITUDES):

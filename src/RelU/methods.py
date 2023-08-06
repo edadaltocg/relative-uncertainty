@@ -23,6 +23,30 @@ def odin(logits: torch.Tensor, temperature: float = 1.0, **kwargs):
 def msp(logits: torch.Tensor, **kwargs):
     return -torch.softmax(logits, dim=1).max(dim=1)[0]
 
+def entropy(logits: torch.Tensor, **kwargs):
+    probs= torch.softmax(logits, dim=1)
+    return -torch.sum(probs * torch.log(probs), dim=1)
+
+def enable_dropout(model):
+    """Function to enable the dropout layers during test-time."""
+    for m in model.modules():
+        if m.__class__.__name__.startswith('Dropout'):
+            m.train()
+
+def add_dropout_layer(model, dropout_p=0.5):
+    """Function to add dropout layers to the model.
+    
+    replace model.linear by a sequential model with dropout and the same linear layer
+    """
+    # get the last layer
+    last_layer = model.linear
+    # remove it
+    model.linear = torch.nn.Sequential()
+    # add dropout
+    model.linear.add_module('dropout', torch.nn.Dropout(dropout_p))
+    # add the last layer
+    model.linear.add_module('linear', last_layer)
+        
 
 class MetricLearningLagrange:
     def __init__(self, model, lbd=0.5, temperature=1, **kwargs):
@@ -75,20 +99,32 @@ class MetricLearningLagrange:
         params = params / params.norm()
         return torch.diag(probs @ params @ probs.T)
 
+    def export_matrix(self):
+        return self.params.cpu()
+
 
 class MLP(torch.nn.Module):
-    def __init__(self, num_classes, hidden_size=128, num_hidden_layers=1, *args, **kwargs) -> None:
+    def __init__(self, num_classes, hidden_size=128, num_hidden_layers=1, dropout_p=0, *args, **kwargs) -> None:
         super().__init__()
         self.layer0 = torch.nn.Linear(num_classes, hidden_size)
+        self.dropout = torch.nn.Dropout(dropout_p)
         self.classifier = torch.nn.Linear(hidden_size, 1)
         self.hidden_layers = None
         if num_hidden_layers > 0:
             self.hidden_layers = torch.nn.Sequential(
-                *([torch.nn.Linear(hidden_size, hidden_size), torch.nn.ReLU()] * num_hidden_layers)
+                *(
+                    [
+                        torch.nn.Linear(hidden_size, hidden_size),
+                        torch.nn.ReLU(),
+                        torch.nn.Dropout(dropout_p),
+                    ]
+                    * num_hidden_layers
+                ),
             )
 
     def forward(self, x):
         x = torch.relu(self.layer0(x))
+        x = self.dropout(x)
         if self.hidden_layers is not None:
             x = self.hidden_layers(x)
         return torch.sigmoid(self.classifier(x))
@@ -104,7 +140,7 @@ class MLPTrainer:
         self.epochs = epochs
 
     def fit(self, train_dataloader, val_dataloader, *args, **kwargs):
-        optimizer = torch.optim.Adam(self.net.parameters(), lr=1e-1)
+        optimizer = torch.optim.Adam(self.net.parameters(), lr=1e-3)
         best_acc = 0
         best_fpr = 1
         best_auc = 0
@@ -148,7 +184,7 @@ class MLPTrainer:
             targets = torch.cat(targets)
             scores = torch.cat(scores)
             preds = torch.cat(preds)
-            acc, roc_auc, fpr = evaluate(preds, targets, scores)
+            acc, roc_auc, fpr, aurc = evaluate(preds, targets, scores)
             # if acc > best_acc:
             #     best_acc = acc
             #     best_weights = copy.deepcopy(self.net.to("cpu").state_dict())
@@ -157,8 +193,12 @@ class MLPTrainer:
                 best_fpr = fpr
                 best_weights = copy.deepcopy(self.net.to("cpu").state_dict())
                 self.net = self.net.to(self.device)
+            # if roc_auc > best_auc:
+            #     best_auc = roc_auc
+            #     best_weights = copy.deepcopy(self.net.to("cpu").state_dict())
+            #     self.net = self.net.to(self.device)
 
-            progress_bar.set_postfix(loss=loss, acc=acc, fpr=fpr, best_fpr=best_fpr, auc=roc_auc)
+            progress_bar.set_postfix(loss=loss, acc=acc, fpr=fpr, best_auc=best_auc, best_fpr=best_fpr, auc=roc_auc)
 
         self.net.load_state_dict(best_weights)
         self.net = self.net.to(self.device)
@@ -182,6 +222,9 @@ class Wrapper:
     def __call__(self, x):
         return self.method(x)
 
+    def export_matrix(self):
+        return self.method.export_matrix()
+
 
 def get_method(method_name, *args, **kwargs):
     if method_name == "doctor":
@@ -194,4 +237,6 @@ def get_method(method_name, *args, **kwargs):
         return Wrapper(MetricLearningLagrange(*args, **kwargs))
     if method_name == "mlp":
         return Wrapper(MLPTrainer(*args, **kwargs))
+    if method_name == "mc_dropout":
+        return Wrapper(entropy)
     raise ValueError(f"Method {method_name} not supported")

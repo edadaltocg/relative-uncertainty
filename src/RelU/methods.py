@@ -23,19 +23,22 @@ def odin(logits: torch.Tensor, temperature: float = 1.0, **kwargs):
 def msp(logits: torch.Tensor, **kwargs):
     return -torch.softmax(logits, dim=1).max(dim=1)[0]
 
+
 def entropy(logits: torch.Tensor, **kwargs):
-    probs= torch.softmax(logits, dim=1)
+    probs = torch.softmax(logits, dim=1)
     return -torch.sum(probs * torch.log(probs), dim=1)
+
 
 def enable_dropout(model):
     """Function to enable the dropout layers during test-time."""
     for m in model.modules():
-        if m.__class__.__name__.startswith('Dropout'):
+        if m.__class__.__name__.startswith("Dropout"):
             m.train()
+
 
 def add_dropout_layer(model, dropout_p=0.5):
     """Function to add dropout layers to the model.
-    
+
     replace model.linear by a sequential model with dropout and the same linear layer
     """
     # get the last layer
@@ -43,10 +46,10 @@ def add_dropout_layer(model, dropout_p=0.5):
     # remove it
     model.linear = torch.nn.Sequential()
     # add dropout
-    model.linear.add_module('dropout', torch.nn.Dropout(dropout_p))
+    model.linear.add_module("dropout", torch.nn.Dropout(dropout_p))
     # add the last layer
-    model.linear.add_module('linear', last_layer)
-        
+    model.linear.add_module("linear", last_layer)
+
 
 class MetricLearningLagrange:
     def __init__(self, model, lbd=0.5, temperature=1, **kwargs):
@@ -131,7 +134,7 @@ class MLP(torch.nn.Module):
 
 
 class MLPTrainer:
-    def __init__(self, model, num_classes, epochs=100, hidden_size=256, num_hidden_layers=2, *args, **kwargs) -> None:
+    def __init__(self, model, num_classes, epochs=100, hidden_size=128, num_hidden_layers=2, *args, **kwargs) -> None:
         self.model = model
         self.device = next(model.parameters()).device
         self.net = MLP(num_classes, hidden_size, num_hidden_layers)
@@ -147,7 +150,7 @@ class MLPTrainer:
         loss = torch.inf
         best_weights = copy.deepcopy(self.net.to("cpu").state_dict())
         self.net = self.net.to(self.device)
-        progress_bar = tqdm(range(self.epochs), desc="Fit", unit="epoch")
+        progress_bar = tqdm(range(self.epochs), desc="Fit", unit="e")
         for e in progress_bar:
             # train step
             self.net.train()
@@ -191,6 +194,8 @@ class MLPTrainer:
             #     self.net = self.net.to(self.device)
             if fpr < best_fpr:
                 best_fpr = fpr
+                best_auc = roc_auc
+                best_aurc = aurc
                 best_weights = copy.deepcopy(self.net.to("cpu").state_dict())
                 self.net = self.net.to(self.device)
             # if roc_auc > best_auc:
@@ -198,7 +203,7 @@ class MLPTrainer:
             #     best_weights = copy.deepcopy(self.net.to("cpu").state_dict())
             #     self.net = self.net.to(self.device)
 
-            progress_bar.set_postfix(loss=loss, acc=acc, fpr=fpr, best_auc=best_auc, best_fpr=best_fpr, auc=roc_auc)
+            progress_bar.set_postfix(l=loss, acc=acc, fpr=fpr, b_auc=best_auc, b_fpr=best_fpr, auc=roc_auc)
 
         self.net.load_state_dict(best_weights)
         self.net = self.net.to(self.device)
@@ -239,4 +244,6 @@ def get_method(method_name, *args, **kwargs):
         return Wrapper(MLPTrainer(*args, **kwargs))
     if method_name == "mc_dropout":
         return Wrapper(entropy)
+    if method_name == "ensemble":
+        return Wrapper(msp)
     raise ValueError(f"Method {method_name} not supported")

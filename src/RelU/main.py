@@ -67,6 +67,41 @@ def get_model_and_dataset(model_name):
     return model, dataset
 
 
+def get_model(model_name, seed):
+    CHECKPOINTS_DIR = os.environ.get("CHECKPOINTS_DIR", "checkpoints/")
+    CHECKPOINTS_DIR = os.path.join(CHECKPOINTS_DIR, args.style)
+    # load model
+    if len(model_name.split("_")) == 1 or model_name.split("_")[0] == "tv":
+        model = timm.create_model(model_name, pretrained=True)
+    else:
+        model_essentials = get_model_essentials(model_name)
+        model = model_essentials["model"]
+        try:
+            w = torch.load(os.path.join(CHECKPOINTS_DIR, args.model_name, str(seed), "best.pth"), map_location="cpu")
+        except:
+            w = torch.load(os.path.join(CHECKPOINTS_DIR, args.model_name, "last.pt"), map_location="cpu")
+        w = {k.replace("module.", ""): v for k, v in w.items()}
+        if "openmix" in args.style:
+            # add one class to model output
+            model._modules[list(model._modules.keys())[-1]] = torch.nn.Linear(
+                model._modules[list(model._modules.keys())[-1]].in_features,
+                model._modules[list(model._modules.keys())[-1]].out_features + 1,
+            )
+
+        model.load_state_dict(w)
+    return model
+
+
+def get_dadatset(model_name):
+    model_essentials = get_model_essentials(model_name)
+    test_transform = model_essentials["test_transforms"]
+    dataset_name = model_name.split("_")[-1]
+    dataset = get_dataset(
+        dataset_name=dataset_name, root=DATA_DIR, train=False, transform=test_transform, download=True
+    )
+    return dataset
+
+
 def main(temperature, magnitude):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     random.seed(args.seed)
@@ -131,12 +166,29 @@ def main(temperature, magnitude):
 
         with torch.no_grad():
             if args.method == "mc_dropout":
-                k=10
+                k = 10
                 logits = torch.zeros(k, inputs.shape[0], num_classes).to(device)
+                single_score = torch.zeros(k, inputs.shape[0]).to(device)
                 for i in range(k):
                     logits[i] = model(inputs)
+                    single_score[i] = method(logits[i])
                 logits = logits.mean(dim=0)
-                scores = method(logits)
+                # scores = method(logits)
+                scores = single_score.mean(dim=0)
+            elif args.method == "ensemble":
+                seeds = range(1, 6)
+                logits = torch.zeros(len(seeds), inputs.shape[0], num_classes).to(device)
+                single_score = torch.zeros(len(seeds), inputs.shape[0]).to(device)
+                for i, seed in enumerate(seeds):
+                    model = get_model(args.model_name, seed)
+                    model = model.to(device)
+                    model.eval()
+                    logits[i] = model(inputs)
+                    single_score[i] = method(logits[i])
+                logits = logits.mean(dim=0)
+                # scores = method(logits)
+                scores = single_score.mean(dim=0)
+
             else:
                 logits = model(inputs)
                 if args.style == "openmix":
@@ -233,7 +285,7 @@ if __name__ == "__main__":
         # 0,
     ]
 
-    if args.method == "msp" or args.method == "mlp" or args.method == "mc_dropout":
+    if args.method == "msp" or args.method == "mlp" or args.method == "mc_dropout" or args.method == "ensemble":
         main(temperature=1.0, magnitude=0.0)
     else:
         for temperature, magnitude in itertools.product(TEMPERATURES, MAGNITUDES):

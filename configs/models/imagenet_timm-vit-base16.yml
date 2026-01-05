@@ -1,0 +1,8 @@
+
+model_name: timm_vit_base16
+dataset_name: imagenet
+checkpoint: ./results/imagenet_timm_vit_tiny16_32x32_base_e200_lr_0.1/best.ckpt            # ignore if pretrained is false
+preprocessor: ce
+seed: 1
+
+  

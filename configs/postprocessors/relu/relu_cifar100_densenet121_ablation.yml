@@ -1,0 +1,14 @@
+postprocessor_args:
+  lambda: 1.0
+  temperature: 0.8
+  magnitude: 0.0
+experience_args:
+  n_folds: 3
+  n_epochs:
+    res: 1
+    cal: 1
+  transform:
+    res: test
+    cal: test
+
+  # File: transform-test_n-epoch1_n-folds10_probits_predweight_clustering

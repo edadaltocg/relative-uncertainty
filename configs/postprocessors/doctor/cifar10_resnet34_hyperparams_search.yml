@@ -1,0 +1,17 @@
+name: doctor
+postprocessor_args:
+  temperature: 1.
+  magnitude: 0.
+  normalize: True
+experience_args:
+  n_folds: None
+  n_epochs:
+    res: None
+    cal: 1
+  transform:
+    res: None
+    cal: test
+postprocessor_grid:
+    temperature: [0.7, 0.8, 0.9, 1.0, 1.1, 1.2]
+    magnitude: [0.0, 0.002, 0.004, 0.006, 0.008, 0.01, 0.012]
+  # File: transform-test_n-epoch1_n-folds10_probits_predweight_clustering

@@ -1,0 +1,34 @@
+name: partition
+postprocessor_args:
+  alpha: 0.5
+  method: unif-mass
+  bound: hoeffding
+  n_classes: 10
+
+  space : max_proba
+  reorder_embs: True
+  temperature: 0.7
+  magnitude: 0.0
+  pred_weights: 0
+  score: upper
+  
+  n_clusters: 100
+  init_scheme: None
+  n_init: None
+  max_iter: None
+  clustering_seed: None
+  
+experience_args:
+  n_folds : 10
+  fit_after_cv: True
+  n_epochs:
+    res: 1
+    cal: 1
+  transform:
+    res: test
+    cal: test
+
+postprocessor_grid:
+  n_clusters: [500]
+  #[10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350, 360, 370, 380, 390, 400, 410, 420, 430, 440, 450, 460, 470, 480, 490, 500]
+

@@ -1,0 +1,33 @@
+name: partition
+postprocessor_args:
+  alpha: 0.05
+  method: unif-width
+  bound: hoeffding
+  n_classes: 10
+
+  space : max_proba
+  reorder_embs: True
+  temperature: 0.7
+  magnitude: 0.0
+  pred_weights: 0
+  score: upper
+  
+  n_clusters: 10000
+  init_scheme: None
+  n_init: None
+  max_iter: None
+  clustering_seed: None
+  
+experience_args:
+  n_folds : None
+  fit_after_cv: False
+  n_epochs:
+    res: 1
+    cal: 1
+  transform:
+    res: test
+    cal: test
+
+postprocessor_grid:
+  n_clusters: [10000]
+  # temperature: []

@@ -1,0 +1,29 @@
+postprocessor_args:
+  n_clusters: 78
+  alpha: 0.05
+  method: soft-kmeans
+  n_classes: 10
+  clustering_seed: 0
+  init_scheme: kmeans
+  n_init: 5
+  space : probits
+  temperature: 5.2
+  cov_type: diag
+  reorder_embs: True
+  bound: hoeffding
+  pred_weights: 0
+postprocessor_grid:
+  temperature: [5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0, 8.2, 8.4, 8.6, 8.8]
+  n_clusters: [72, 74, 76, 78, 80, 82, 84, 86, 88, 90, 92, 94, 96, 98, 100, 102, 104, 106, 108]
+experience_args:
+  n_folds: 3
+  n_epochs:
+    res: 1
+    cal: 1
+  transform:
+    res: test
+    cal: test
+  
+
+# cifar100_resnet34_r-2_seed-split-9/transform-test_n-epoch1_n-folds3_probits_clustering
+

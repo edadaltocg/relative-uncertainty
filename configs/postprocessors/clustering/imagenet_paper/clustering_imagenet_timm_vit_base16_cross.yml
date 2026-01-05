@@ -1,0 +1,27 @@
+postprocessor_args:
+  n_clusters: 150
+  alpha: 0.05
+  method: soft-kmeans_torch
+  n_classes: 10
+  clustering_seed: 1
+  init_scheme: kmeans
+  n_init: 10
+  space : probits
+  temperature: 1.05
+  cov_type: diag
+  reorder_embs: True
+  bound: bernstein
+  pred_weights: 0
+postprocessor_grid:
+  temperature: [0.98, 1., 1.02, 1.05]
+  n_clusters: [150, 160, 170, 180, 190, 200, 210, 220, 230, 240]
+experience_args:
+  n_epochs:
+    res: 1
+    cal: 1
+  transform:
+    res: test
+    cal: test
+  
+  
+# File: fair_ce_results/imagenet_timm_vit_base16_r-0.5_seed-split-9/transform-test_n-epoch1_n-folds3_probits_soft-kmeans_torch_bernstein_n-init-10_kmeans_clustering

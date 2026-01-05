@@ -1,0 +1,23 @@
+postprocessor_args:
+  n_clusters: 80
+  alpha: 0.05
+  method: soft-kmeans_torch
+  n_classes: 100
+  clustering_seed: 0
+  init_scheme: kmeans
+  n_init: 5
+  space : probits
+  temperature: 1.2
+  cov_type: diag
+  reorder_embs: True
+  bound: hoeffding
+  pred_weights: 0 # No predweights
+experience_args:
+  n_folds: 3
+  n_epochs:
+    res: 1
+    cal: 1
+  transform:
+    res: test
+    cal: test
+  

@@ -1,0 +1,15 @@
+
+name: cifar10
+num_classes: 10
+pre_size: 32
+image_size: 32
+split_names: [res, cal, test]
+n_samples : 
+  res: 3000
+  cal: 2000
+  test: 5000
+
+seed_split : [9]
+batch_size_train: 512
+batch_size_test: 512
+

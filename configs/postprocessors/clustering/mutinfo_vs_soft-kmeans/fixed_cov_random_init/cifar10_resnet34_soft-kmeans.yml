@@ -1,0 +1,30 @@
+name: partition
+postprocessor_args:
+  alpha: 0.05
+  method: soft-kmeans_torch
+  bound: bernstein
+  n_classes: 10
+
+  space : probits
+  reorder_embs: True
+  temperature: 2
+  pred_weights: 0
+  
+  n_clusters: 100
+  cov_type: diag
+  init_scheme: kmeans
+  n_init: 1
+  max_iter: 20000
+  clustering_seed: 1
+  lr: null
+  sig: null
+  
+experience_args:
+  n_folds: None
+  n_epochs:
+    res: 1
+    cal: 1
+  transform:
+    res: test
+    cal: test
+

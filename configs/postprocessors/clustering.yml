@@ -1,0 +1,15 @@
+postprocessor_args:
+  n_clusters: 210
+  alpha: 0.05
+  method: soft-kmeans_torch
+  n_classes: 10
+  clustering_seed: 0
+  init_scheme: k-means++
+  n_init: 5
+  space : probits
+  temperature: 1.05
+  cov_type: diag
+  reorder_embs: True
+  bound: bernstein
+  pred_weights: None
+  

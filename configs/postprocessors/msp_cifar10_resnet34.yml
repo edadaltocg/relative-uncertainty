@@ -1,0 +1,11 @@
+postprocessor:
+  APS_mode: false
+  name: msp
+  postprocessor_args:
+    temperature: 1
+    magnitude : 0.0
+  postprocessor_sweep:
+    temperature:
+    - [0.7, 0.8, 0.9, 1.0, 1.1, 1.2]
+     magnitude:
+    - [0.0, 0.002, 0.004, 0.006, 0.008, 0.01, 0.012]

@@ -1,0 +1,41 @@
+name: mlp
+postprocessor_args:
+  temperature: 1.0
+  space: logits
+  reorder_embs: False
+  normalize_gini: False
+
+  hidden_dims: [2048, 512, 128]
+  activation: gelu
+  dropout: 0.3
+  use_batchnorm: True
+
+  num_epochs: 20
+  batch_size: 512
+  lr: 0.0005
+  weight_decay: 0.0001
+  grad_clip_norm: 5.0
+  positive_class_weight: 4.0
+  scheduler:
+    name: cosine
+    t_max: 20
+    eta_min: 1.0e-05
+experience_args:
+  n_folds: 5
+  n_epochs:
+    res: None
+    cal: 1
+  transform:
+    res: None
+    cal: test
+postprocessor_grid:
+  hidden_dims:
+    - [2048, 1024, 256]
+    - [2048, 512, 128]
+    - [1024, 256]
+  dropout: [0.1, 0.25, 0.4]
+  activation: [relu, gelu]
+  lr: [0.0005, 0.001]
+  weight_decay: [0.0, 0.0001]
+  num_epochs: [15, 25]
+  positive_class_weight: [2.0, 4.0, 6.0]

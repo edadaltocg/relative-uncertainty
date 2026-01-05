@@ -1,0 +1,14 @@
+
+name: imagenet
+num_classes: 1000
+pre_size: 242
+image_size: 242
+split_names: [res, cal, test]
+n_samples : 
+  res: 1500
+  cal: 23500
+  test: 25000
+seed_split : 9
+batch_size_train: 512
+batch_size_test: 512
+

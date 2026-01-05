@@ -127,6 +127,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+myenv_old
+myenv
 
 # Spyder project settings
 .spyderproject
@@ -158,15 +160,58 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
-
+*.png
 *.zip
-*.sh
+# *.sh
 checkpoints/
 .DS_Store
 cluster/
 .vscode/
 **slurm*
-results/
+synth_results/
+synthetic_data
+synthetic_results
+first_cifar10_results/
 tensors/
 images/
 *.pt
+nohup.out
+data/
+myenv/
+mismatch_and_corruption/
+old_images/
+code/utils/quantizer
+code/utils/quantizers
+requirements_from_311_clean.txt
+requirements_from_311.txt
+
+.python-version
+
+code/utils/theory/
+code/utils/test_metrics.ipynb
+code/old
+code/utils/old
+code/utils/clustering/visualizations
+code/utils/dataset/old
+code/1d_example.ipynb
+code/utils/plot_results.ipynb
+results/imagenet
+code/detection_imagenet.py
+code/detection_parallel.py
+code/detection_synth_split.py
+results/cifar10_knn
+results/cifar10_logistic
+
+cluster_examples_*
+code/utils/clustering/add_class_info.py
+code/utils/clustering/gmm_scikit.py
+code/utils/clustering/gmm_scikit_nores.py
+code/utils/clustering/kmeans_results/
+code/utils/clustering/my_soft_kmeans_.py
+code/utils/clustering/overfitting_results/
+code/utils/clustering/overfitting_with-res-cal_results/
+code/result_*
+*result*
+code/detection_clean.py
+code/detection_ablation.py
+code/detection_abalation_hyperparams.py

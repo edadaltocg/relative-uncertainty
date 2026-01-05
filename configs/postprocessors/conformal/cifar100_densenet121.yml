@@ -1,0 +1,21 @@
+name: conformal
+
+postprocessor_args:
+  alpha: 0.05
+  # kreg: 5    # leave commented for automatic kreg
+  # lamda: 0.1 # leave commented for automatic lambda
+  randomized: true
+  allow_zero_sets: false
+  batch_size: 256
+  pct_paramtune: 0.2 # 1k
+  lamda_criterion: "adaptiveness"
+
+experience_args:
+  n_epochs:
+    res: 1
+    cal: 1
+  transform:
+    res: test
+    cal: test
+
+

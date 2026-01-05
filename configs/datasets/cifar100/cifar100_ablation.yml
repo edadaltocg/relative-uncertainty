@@ -1,0 +1,21 @@
+
+name: cifar100
+num_classes: 100
+pre_size: 32
+image_size: 32
+split_names: [res, cal, test]
+n_samples : 
+  res: 0
+  cal: [500, 1000, 2000, 3000, 4000, 5000]
+  test: 5000
+transform:
+  res: None
+  cal: test
+n_epochs:
+  res: None
+  cal: 1
+
+seed_split : [1, 2, 3, 4, 5, 6, 7, 8, 9]
+batch_size_train: 252
+batch_size_test: 252
+

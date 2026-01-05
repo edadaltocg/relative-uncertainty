@@ -1,0 +1,7 @@
+
+model_name: densenet121
+dataset_name: cifar10
+checkpoint: ./results/cifar10_densenet121_32x32_base_e200_lr_0.1/best.ckpt            # ignore if pretrained is false
+preprocessor: ce
+seed: 1
+

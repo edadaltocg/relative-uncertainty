@@ -1,0 +1,28 @@
+name: random_forest
+postprocessor_args:
+  temperature: 2
+  space: probits
+  reorder_embs: True
+
+  n_estimators: 100
+  max_depth: 3
+  min_samples_split: 2
+  min_samples_leaf: 1
+  max_features: sqrt
+  random_state: 1
+  class_weight: balanced
+experience_args:
+  n_folds: 5
+  n_epochs:
+    res: None
+    cal: 1
+  transform:
+    res: None
+    cal: test
+postprocessor_grid:
+    n_estimators: [50,  100, 130, 150, 170, 190,  220,  250,  300] # [50, 100, 200] #
+    max_depth: [9, 11,12, 13, 14, 15]
+    # min_samples_split: [2, 5, 10]
+    min_samples_leaf: [1, 2, 4, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    
+  # File: transform-test_n-epoch1_n-folds10_probits_predweight_clustering

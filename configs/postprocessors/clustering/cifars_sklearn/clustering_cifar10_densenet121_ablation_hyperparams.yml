@@ -1,0 +1,26 @@
+postprocessor_args:
+  n_clusters: 96
+  alpha: 0.05
+  method: soft-kmeans
+  n_classes: 10
+  clustering_seed: 0
+  init_scheme: kmeans
+  n_init: 5
+  space : probits
+  temperature: 4.9
+  cov_type: diag
+  reorder_embs: True
+  bound: hoeffding
+  pred_weights: 0
+experience_args:
+  n_folds: 3
+  n_epochs:
+    res: 1
+    cal: 1
+  transform:
+    res: test
+    cal: test
+ablation_args:
+  temperature: [12, 15, 17, 23, 25, 27,32, 35] #[1, 1.5, 2, 2.5, 3, 3.5, 4, 7, 8, 9, 10] # [4.7, 4.9, 5.1, 5.3, 5.5, 5.7, 5.9, 6.1, 6.3]
+  n_clusters: [175, 225, 275] #[10, 15, 20, 25, 30, 35, 40, 45, 50, 105, 110, 120, 130, 140, 150] # [60, 62, 64, 66, 68, 70, 72, 74, 76, 78, 80, 82, 84, 86, 88, 90, 92, 94, 96, 98]
+  # File: transform-test_n-epoch1_n-folds10_probits_predweight_clustering
